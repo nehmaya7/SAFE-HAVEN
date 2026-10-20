@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Vec};
+use soroban_sdk::{contracttype, Address, Bytes, BytesN, String, Vec};
 
 pub const MAX_DEPOSIT_AMOUNT: i128 = 1_000_000_000_000_000;
 pub const MAX_LOCK_DURATION_SECS: u64 = 157_788_000;
@@ -6,6 +6,8 @@ pub const MIN_LOCK_DURATION_SECS: u64 = 60;
 
 /// Maximum number of tokens allowed in a single multi-token deposit (issue #330).
 pub const MAX_TOKENS_PER_DEPOSIT: u32 = 5;
+/// Emergency withdrawals at or above this cumulative amount in one ledger trip the circuit breaker.
+pub const MAX_EMERGENCY_WITHDRAWAL_PER_LEDGER: i128 = 100_000_000;
 
 /// Current storage schema version. Bump this constant when the on-chain
 /// layout of a `contracttype` struct changes so `migrate()` can detect
@@ -14,13 +16,6 @@ pub const STORAGE_VERSION: u32 = 1;
 
 /// Fraction of the penalty fee reserved for the insurance pool (5 = 5%).
 pub const INSURANCE_POOL_BPS: u32 = 500; // 5% in basis points
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DepositType {
-    TimeBased,
-    LedgerBased,
-}
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -58,9 +53,28 @@ pub enum VaultKey {
     MaxDeposit,
     MaxLockSecs,
     Paused,
+    /// Boolean membership flag for the token allowlist.
+    AllowedToken(Address),
+    /// When true, deposits may use only tokens in the allowlist.
+    StrictTokenAllowlist,
+    /// Stores the token vetting workflow state.
+    TokenVetting(Address),
+    ProposalCounter,
+    GovernanceProposal(u32),
+    GovernanceVote(u32, Address),
+    NextUpgradeId,
+    UpgradeProposal(u32),
+    UpgradeVote(u32, Address),
+    UpgradeVeto(u32, Address),
     /// Persists the schema version written by the last `migrate()` call (or 1
     /// for contracts that were initialized before versioning was introduced).
     StorageVersion,
+    /// Guards flash-loan execution against re-entrant nested calls.
+    FlashLoanGuard,
+    /// Active borrower state for a single-token flash loan.
+    FlashLoanState(Address, Address),
+    /// Fee share owed to a depositor for a token after flash-loan repayment.
+    FlashLoanFeeBalance(Address, Address),
     /// Staker entry: maps staker address to their stake amount
     Staker(Address),
     /// List of all registered stakers
@@ -89,6 +103,22 @@ pub struct VaultEntry {
     pub compound_frequency_secs: u64,
     /// Timestamp of last compound accrual (issue #332).
     pub last_accrual_timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TaxLossHarvest {
+    pub depositor: Address,
+    pub original_token: Address,
+    pub replacement_token: Address,
+    pub original_deposit_id: u32,
+    pub replacement_deposit_id: u32,
+    pub cost_basis: i128,
+    pub current_value: i128,
+    pub realized_loss: i128,
+    pub tax_benefit: i128,
+    pub harvested_at: u64,
+    pub wash_sale_until: u64,
 }
 
 #[contracttype]
