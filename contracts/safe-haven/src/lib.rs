@@ -14,6 +14,8 @@ mod constants;
 mod contract;
 mod errors;
 mod events;
+mod mev_detection;
+mod mev_integration;
 mod storage;
 mod types;
 

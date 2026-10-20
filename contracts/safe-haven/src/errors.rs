@@ -29,4 +29,8 @@ pub enum VaultError {
     RecipientNotWhitelisted = 18,
     /// Compound frequency must be >= 60 seconds if non-zero (issue #332).
     InvalidCompoundFrequency = 19,
+    /// MEV attack detected: price deviation > 200 bps from TWAP
+    MevDetected = 20,
+    /// Price sampling too frequent: must wait >= 1 hour between samples
+    SamplingTooFrequent = 21,
 }

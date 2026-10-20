@@ -33,13 +33,6 @@ pub struct DepositRequest {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DepositType {
-    TimeBased,
-    LedgerBased,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum VaultKey {
     Deposit(Address, u32),
     DepositByLedger(Address, u32),
@@ -80,6 +73,8 @@ pub enum VaultKey {
     RewardsPool,
     /// Rewards claimed by a staker (track cumulative for auditing)
     StakerRewardsClaimed(Address),
+    /// Price samples for MEV detection (TWAP calculation)
+    PriceSamples(Address),
 }
 
 #[contracttype]
@@ -158,12 +153,4 @@ pub struct Page {
 pub struct StakerEntry {
     pub staker: Address,
     pub stake_amount: i128,
-}
-
-/// Deposit type indicator — distinguishes between timestamp-based and ledger-based deposits
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DepositType {
-    TimeBased,
-    LedgerBased,
 }
